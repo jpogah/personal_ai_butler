@@ -186,9 +186,41 @@ Then add the secret: `security add-generic-password -s claude-butler -a api_key 
 ```bash
 scripts/start.sh      # load LaunchAgent (auto-start on login)
 scripts/stop.sh       # stop without uninstalling
+scripts/restart.sh    # restart and pick up code changes
 scripts/uninstall.sh  # remove daemon
 launchctl list | grep butler  # check status
 tail -f logs/butler.log       # view logs
+```
+
+## Development Workflow
+
+After editing any source file, apply changes with:
+
+```bash
+scripts/restart.sh
+```
+
+For active development with live terminal output:
+
+```bash
+scripts/stop.sh       # stop the daemon
+scripts/run_dev.sh    # run in foreground (Ctrl+C to stop)
+scripts/start.sh      # reload daemon when done
+```
+
+After pulling updates from GitHub:
+
+```bash
+git pull
+scripts/restart.sh
+```
+
+If `requirements.txt` changed:
+
+```bash
+git pull
+.venv/bin/pip install -r requirements.txt
+scripts/restart.sh
 ```
 
 ---

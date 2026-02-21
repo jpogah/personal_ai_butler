@@ -7,7 +7,6 @@
 
     <key>ProgramArguments</key>
     <array>
-        <!-- Absolute path to venv python — updated by install.sh -->
         <string>BUTLER_HOME/.venv/bin/python</string>
         <string>-m</string>
         <string>butler.main</string>

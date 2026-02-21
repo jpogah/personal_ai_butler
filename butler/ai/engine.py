@@ -210,9 +210,41 @@ class AIEngine:
         Claude Code's built-in tools (Bash, Read, Write, etc.) are available
         via --allowedTools, so the butler can still perform Mac actions.
         """
+        butler_home = str(Path(__file__).parent.parent.parent)
+        python_bin = str(Path(butler_home) / ".venv" / "bin" / "python")
+        tools_cli = f"{python_bin} -m butler.tools_cli"
+
+        cli_tools_section = f"""
+## CLI Tools (use via Bash)
+You have access to butler's full tool suite by running bash commands from {butler_home}:
+
+Browser:
+  {tools_cli} browser_navigate '{{"url":"https://example.com"}}'
+  {tools_cli} browser_click '{{"selector":"button#submit"}}'
+  {tools_cli} browser_type '{{"selector":"input#search","text":"query"}}'
+  {tools_cli} browser_get_text '{{"selector":"body"}}'
+  {tools_cli} browser_screenshot '{{}}'   # returns file path — show it to user with Read
+
+Screenshots:
+  {tools_cli} screenshot '{{"target":"desktop"}}'  # or "browser"
+
+Email (if configured):
+  {tools_cli} email_list '{{"count":10}}'
+  {tools_cli} email_read '{{"message_id":"42"}}'
+  {tools_cli} email_send '{{"to":"x@y.com","subject":"Hi","body":"Hello"}}'
+
+Files:
+  {tools_cli} file_read '{{"path":"~/notes.txt"}}'
+  {tools_cli} file_list '{{"directory":"~/Desktop"}}'
+  {tools_cli} file_write '{{"path":"~/out.txt","content":"hello"}}'
+
+When a tool returns a file path (screenshot, browser_screenshot), use Read to display it.
+Always run these from the working directory: {butler_home}
+"""
+
         try:
             # Format conversation history as a readable transcript
-            transcript_lines = [self._system_prompt, "", "--- Conversation so far ---"]
+            transcript_lines = [self._system_prompt, cli_tools_section, "--- Conversation so far ---"]
             for msg in history[:-1]:  # exclude the just-appended user message
                 role = msg.get("role", "?")
                 content = msg.get("content", "")
@@ -246,7 +278,7 @@ class AIEngine:
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=str(Path.home()),
+                cwd=butler_home,
                 env=env,
             )
 

@@ -57,9 +57,8 @@ class Butler:
         # Dedup: set of recently seen message IDs
         self._seen_ids: set[str] = set()
         self._shutdown_event = asyncio.Event()
-        # Per-user message queues — serializes requests so only 1 runs at a time per user
-        self._user_queues: dict[str, asyncio.Queue] = {}
-        self._user_workers: dict[str, asyncio.Task] = {}
+        # Global browser lock — browser has one page, serialize browser-using tasks
+        self._browser_lock = asyncio.Lock()
 
     async def start(self) -> None:
         cfg = self._cfg
@@ -214,60 +213,11 @@ class Butler:
             if approver.handle_reply(msg.text):
                 return  # message was an approval reply, don't process as a new request
 
-        # Queue the message — ensures only 1 task runs at a time per user
-        await self._enqueue(msg)
-
-    async def _enqueue(self, msg: InboundMessage) -> None:
-        """Add message to the user's queue, starting a worker if not already running."""
-        uid = msg.sender_id
-        if uid not in self._user_queues:
-            self._user_queues[uid] = asyncio.Queue()
-
-        queue = self._user_queues[uid]
-        queue_size = queue.qsize()
-
-        if queue_size >= 5:
-            # Queue full — tell the user instead of silently dropping
-            channel = next((ch for ch in self._channels if ch.channel_name == msg.channel), None)
-            if channel:
-                await channel.send(OutboundMessage(
-                    channel=msg.channel,
-                    recipient_id=uid,
-                    text="⚠️ I'm busy with several requests. Please wait for the current one to finish.",
-                ))
-            return
-
-        await queue.put(msg)
-
-        # Notify user if there's a queue ahead of them
-        if queue_size > 0:
-            channel = next((ch for ch in self._channels if ch.channel_name == msg.channel), None)
-            if channel:
-                await channel.send(OutboundMessage(
-                    channel=msg.channel,
-                    recipient_id=uid,
-                    text=f"⏳ Queued (position {queue_size + 1}). I'll get to it after the current task.",
-                ))
-
-        # Start worker if not already running
-        worker = self._user_workers.get(uid)
-        if worker is None or worker.done():
-            self._user_workers[uid] = asyncio.create_task(
-                self._user_worker(uid),
-                name=f"worker-{uid}",
-            )
-
-    async def _user_worker(self, uid: str) -> None:
-        """Drain the user's message queue one message at a time."""
-        queue = self._user_queues[uid]
-        while not queue.empty():
-            msg = await queue.get()
-            try:
-                await self._process_message(msg)
-            except Exception as e:
-                logger.error("Unhandled error in worker for %s: %s", uid, e, exc_info=True)
-            finally:
-                queue.task_done()
+        # Spawn concurrent task — multiple requests can run in parallel
+        asyncio.create_task(
+            self._process_message(msg),
+            name=f"msg-{msg.channel}-{msg.sender_id}",
+        )
 
     async def _process_message(self, msg: InboundMessage) -> None:
         """Process a message: show typing → run AI → reply."""

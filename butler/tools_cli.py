@@ -54,6 +54,17 @@ async def _run(tool_name: str, args: dict) -> str:
         from butler.tools.browser_tool import browser_navigate
         return await browser_navigate(args["url"], **browser_kwargs)
 
+    elif tool_name == "browser_open":
+        # Navigate + screenshot in one process call (avoids blank screenshot issue)
+        from butler.tools.browser_tool import browser_navigate, browser_screenshot
+        import time
+        nav_result = await browser_navigate(args["url"], **browser_kwargs)
+        await asyncio.sleep(2)  # let page fully render
+        media_dir = cfg.media_dir if cfg else "./data/media"
+        out_path = str(Path(media_dir) / f"screenshot_{int(time.time())}.png")
+        shot_path = await browser_screenshot(output_path=out_path, **browser_kwargs)
+        return f"{nav_result}\nScreenshot: {shot_path}"
+
     elif tool_name == "browser_click":
         from butler.tools.browser_tool import browser_click
         return await browser_click(args["selector"], **browser_kwargs)

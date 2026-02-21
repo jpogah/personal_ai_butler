@@ -219,11 +219,12 @@ class AIEngine:
 You have access to butler's full tool suite by running bash commands from {butler_home}:
 
 Browser:
-  {tools_cli} browser_navigate '{{"url":"https://example.com"}}'
+  {tools_cli} browser_open '{{"url":"https://example.com"}}'   # navigate + screenshot in one step (PREFERRED)
+  {tools_cli} browser_navigate '{{"url":"https://example.com"}}'  # navigate only
   {tools_cli} browser_click '{{"selector":"button#submit"}}'
   {tools_cli} browser_type '{{"selector":"input#search","text":"query"}}'
   {tools_cli} browser_get_text '{{"selector":"body"}}'
-  {tools_cli} browser_screenshot '{{}}'   # returns file path — show it to user with Read
+  {tools_cli} browser_screenshot '{{}}'   # screenshot current page (must be same process as navigate — use browser_open instead)
 
 Screenshots:
   {tools_cli} screenshot '{{"target":"desktop"}}'  # or "browser"

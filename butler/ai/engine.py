@@ -191,8 +191,11 @@ class AIEngine:
             env = os.environ.copy()
             env.pop("CLAUDECODE", None)
 
+            # Use absolute path so the daemon finds the right claude version
+            claude_bin = str(Path.home() / ".claude" / "local" / "claude")
+
             proc = await asyncio.create_subprocess_exec(
-                "claude",
+                claude_bin,
                 "--print",
                 "--output-format", "text",
                 "--allowedTools",
@@ -226,7 +229,7 @@ class AIEngine:
             return "⏰ Request timed out (5 min). Try narrowing your question — e.g. ask about a specific file or function rather than the whole codebase."
         except FileNotFoundError:
             return (
-                "❌ `claude` CLI not found in PATH.\n"
+                f"❌ Claude CLI not found at {claude_bin}.\n"
                 "Make sure Claude Code is installed: https://claude.ai/download\n"
                 "Or set anthropic.api_key in config/butler.yaml to use the API instead."
             )

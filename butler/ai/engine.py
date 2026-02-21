@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 from typing import Optional
 
@@ -186,6 +187,10 @@ class AIEngine:
 
             logger.debug("CLI prompt length: %d chars", len(full_prompt))
 
+            # Strip CLAUDECODE env var to allow nested invocation
+            env = os.environ.copy()
+            env.pop("CLAUDECODE", None)
+
             proc = await asyncio.create_subprocess_exec(
                 "claude",
                 "--print",
@@ -195,7 +200,8 @@ class AIEngine:
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=str(Path.home()),  # run from home dir so relative paths work naturally
+                cwd=str(Path.home()),
+                env=env,
             )
 
             stdout, stderr = await asyncio.wait_for(

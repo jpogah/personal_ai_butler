@@ -1,0 +1,33 @@
+# Secrets
+config/butler.yaml
+
+# Runtime data
+data/
+logs/
+.playwright/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Node
+whatsapp_bridge/node_modules/
+
+# WhatsApp cache
+.wwebjs_cache/
+.wwebjs_auth/
+
+# Editor swap/temp files
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store

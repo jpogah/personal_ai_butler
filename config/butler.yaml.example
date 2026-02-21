@@ -1,0 +1,98 @@
+# Personal AI Butler Configuration
+# Copy to config/butler.yaml and fill in your values
+# IMPORTANT: chmod 600 config/butler.yaml after filling in secrets
+
+# ─── Security ────────────────────────────────────────────────────────────────
+security:
+  authorized_senders:
+    # Get your Telegram user ID from @userinfobot
+    telegram:
+      - 123456789
+    # Your WhatsApp phone in E.164 format (e.g. +12025551234)
+    whatsapp:
+      - "+12025551234"
+  rate_limit:
+    messages_per_minute: 10
+    burst: 3
+
+# ─── Telegram ────────────────────────────────────────────────────────────────
+telegram:
+  # Get bot token from @BotFather on Telegram
+  bot_token: "YOUR_BOT_TOKEN_HERE"
+  # Set to false to disable Telegram channel
+  enabled: true
+
+# ─── WhatsApp ────────────────────────────────────────────────────────────────
+whatsapp:
+  # Set to false to disable WhatsApp channel
+  enabled: false
+  bridge:
+    port: 8765
+    session_dir: "./data/sessions"
+    # Path to node binary (if not in PATH)
+    node_path: "node"
+
+# ─── Anthropic / Claude ──────────────────────────────────────────────────────
+anthropic:
+  # Your API key from console.anthropic.com
+  # Leave empty "" to use Claude Code CLI only (requires `claude` in PATH)
+  api_key: "YOUR_ANTHROPIC_API_KEY"
+  model: "claude-sonnet-4-6"
+  max_tokens: 4096
+  # Max conversation history tokens before truncation
+  history_token_budget: 100000
+  # Number of recent messages to always keep when truncating
+  history_keep_recent: 10
+
+# ─── Email ───────────────────────────────────────────────────────────────────
+email:
+  enabled: false
+  imap:
+    host: "imap.gmail.com"
+    port: 993
+    # Gmail: use your email address
+    username: "you@gmail.com"
+    # Gmail: generate an App Password at myaccount.google.com/apppasswords
+    password: "YOUR_APP_PASSWORD"
+  smtp:
+    host: "smtp.gmail.com"
+    port: 587
+    username: "you@gmail.com"
+    password: "YOUR_APP_PASSWORD"
+    from_address: "you@gmail.com"
+
+# ─── Browser ─────────────────────────────────────────────────────────────────
+browser:
+  enabled: true
+  # Chromium data dir for persistent sessions (cookies, etc.)
+  user_data_dir: "./data/browser_profile"
+  headless: true
+
+# ─── Permissions ─────────────────────────────────────────────────────────────
+permissions:
+  # SAFE, LOW: auto-approved
+  # MEDIUM: ask user (default)
+  # HIGH, CRITICAL: always ask user
+  auto_approve_below: "LOW"
+  # Seconds to wait for user approval before timing out
+  approval_timeout: 60
+  # Commands that are ALWAYS blocked regardless of approval
+  blocklist:
+    - "rm -rf /"
+    - ":(){ :|:& };:"
+    - "dd if=/dev/random"
+    - "mkfs"
+    - "format"
+
+# ─── Paths ───────────────────────────────────────────────────────────────────
+paths:
+  data_dir: "./data"
+  media_dir: "./data/media"
+  log_dir: "./logs"
+  db_path: "./data/butler.db"
+
+# ─── Logging ─────────────────────────────────────────────────────────────────
+logging:
+  level: "INFO"
+  # Set to true for structured JSON logs
+  json: false

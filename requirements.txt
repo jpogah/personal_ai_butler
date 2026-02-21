@@ -1,0 +1,9 @@
+anthropic>=0.40
+python-telegram-bot[job-queue]>=21
+aiohttp>=3.12
+aiosqlite>=0.21
+playwright>=1.49
+PyYAML>=6
+pydantic>=2
+Pillow>=11
+tenacity>=9

@@ -98,7 +98,7 @@ class Butler:
             }
 
         # Tool registry
-        init_tools(
+        registry = init_tools(
             bash_fn=run_bash,
             file_read_fn=file_read,
             file_write_fn=file_write,
@@ -109,6 +109,7 @@ class Butler:
             send_file_to_user=self._send_file_to_user,
             approver_factory=self._get_approver,
         )
+        registry.set_history(self._history)
 
         # Channels
         if cfg.telegram_enabled and cfg.telegram_token:

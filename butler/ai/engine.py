@@ -83,11 +83,15 @@ class AIEngine:
 
         # Route: API (with full tool loop) or CLI (Claude Max)
         if self._client:
-            history = await self._history.load(conv_id)
+            history = await self._history.load(
+                conv_id, sender_id, channel, summarize_fn=self._summarize_messages
+            )
             response = await self._run_api(history, sender_id, channel, recipient_id)
         else:
-            history = await self._history.load(conv_id)
-            response = await self._run_cli(history, text or "")
+            history = await self._history.load(
+                conv_id, sender_id, channel, summarize_fn=self._summarize_messages
+            )
+            response = await self._run_cli(history, text or "", sender_id, channel)
 
         # Persist assistant response
         await self._history.append(conv_id, "assistant", response, tokens=_estimate_tokens(response))
@@ -157,7 +161,46 @@ class AIEngine:
 
         return "[Error] Maximum tool-use iterations reached. Please try a simpler request."
 
-    async def _run_cli(self, history: list[dict], current_text: str) -> str:
+    async def _summarize_messages(self, messages: list[dict]) -> str:
+        """Summarize a chunk of messages into a compact memory block via the CLI."""
+        lines = []
+        for msg in messages:
+            role = msg.get("role", "?")
+            content = msg.get("content", "")
+            if isinstance(content, list):
+                text_parts = [b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text"]
+                content = " ".join(text_parts)
+            label = "User" if role == "user" else "Assistant"
+            if content:
+                lines.append(f"{label}: {content[:400]}")
+
+        prompt = (
+            "Summarize this conversation chunk in 3-5 bullet points.\n"
+            "Focus on: tasks completed, important facts about the user or their system, key decisions.\n"
+            "Be very concise. Bullet points only.\n\n"
+            "Conversation:\n" + "\n".join(lines) + "\n\nSummary:"
+        )
+
+        env = os.environ.copy()
+        env.pop("CLAUDECODE", None)
+        claude_bin = str(Path.home() / ".claude" / "local" / "claude")
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                claude_bin, "--print", "--output-format", "text",
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=env,
+            )
+            stdout, _ = await asyncio.wait_for(proc.communicate(input=prompt.encode()), timeout=60)
+            result = stdout.decode(errors="replace").strip()
+            result = re.sub(r"\x1b\[[0-9;]*m", "", result)
+            return result or "(summary unavailable)"
+        except Exception as e:
+            logger.warning("Summarization failed: %s", e)
+            return "(summary unavailable)"
+
+    async def _run_cli(self, history: list[dict], current_text: str, sender_id: str = "", channel: str = "") -> str:
         """
         Run via Claude Code CLI using the Max subscription.
 

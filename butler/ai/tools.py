@@ -176,6 +176,41 @@ TOOL_DEFINITIONS = [
             "required": ["to", "subject", "body"],
         },
     },
+    {
+        "name": "remember",
+        "description": (
+            "Save a fact about the user to persistent memory. Use this when the user asks you to "
+            "remember something, or when you learn something important and stable about them "
+            "(preferences, project paths, recurring tasks, name, etc.)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "key": {"type": "string", "description": "Short label for the fact (e.g. 'main_project_path', 'preferred_language')"},
+                "value": {"type": "string", "description": "The fact to remember"},
+            },
+            "required": ["key", "value"],
+        },
+    },
+    {
+        "name": "forget",
+        "description": "Remove a previously remembered fact from memory.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "key": {"type": "string", "description": "The key to forget"},
+            },
+            "required": ["key"],
+        },
+    },
+    {
+        "name": "list_memories",
+        "description": "Show all facts currently stored in memory about the user.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+        },
+    },
 ]
 
 
@@ -191,8 +226,9 @@ class ToolRegistry:
         self._file_list_fn = None
         self._browser_cfg: dict = {}
         self._email_tool = None
-        self._send_file_to_user: Optional[Callable] = None  # async (recipient_id, path, channel)
-        self._approver_factory: Optional[Callable] = None   # (sender_id) -> ApprovalManager
+        self._send_file_to_user: Optional[Callable] = None
+        self._approver_factory: Optional[Callable] = None
+        self._history = None   # ConversationHistory instance for memory tools
 
     def configure(
         self,
@@ -214,6 +250,9 @@ class ToolRegistry:
         self._email_tool = email_tool
         self._send_file_to_user = send_file_to_user
         self._approver_factory = approver_factory
+
+    def set_history(self, history) -> None:
+        self._history = history
 
     async def dispatch(
         self,
@@ -312,6 +351,26 @@ class ToolRegistry:
             return await self._email_tool.send_email(
                 args["to"], args["subject"], args["body"], approver
             )
+
+        elif tool_name == "remember":
+            if not self._history:
+                return "[ERROR] Memory not available"
+            await self._history.save_memory(sender_id, channel, args["key"], args["value"])
+            return f"✅ Remembered: {args['key']} = {args['value']}"
+
+        elif tool_name == "forget":
+            if not self._history:
+                return "[ERROR] Memory not available"
+            removed = await self._history.forget_memory(sender_id, channel, args["key"])
+            return f"✅ Forgotten: {args['key']}" if removed else f"Nothing stored under '{args['key']}'"
+
+        elif tool_name == "list_memories":
+            if not self._history:
+                return "[ERROR] Memory not available"
+            memories = await self._history.list_memories(sender_id, channel)
+            if not memories:
+                return "No memories stored yet."
+            return "\n".join(f"• {k}: {v}" for k, v in memories.items())
 
         else:
             return f"[ERROR] Unknown tool: {tool_name}"

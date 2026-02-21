@@ -48,9 +48,30 @@ CREATE TABLE IF NOT EXISTS audit_log (
     created_at  REAL NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS summaries (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT NOT NULL REFERENCES conversations(id),
+    content     TEXT NOT NULL,           -- compact summary text
+    first_msg_id INTEGER NOT NULL,       -- first message ID covered
+    last_msg_id  INTEGER NOT NULL,       -- last message ID covered
+    created_at  REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_memory (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id   TEXT NOT NULL,
+    channel     TEXT NOT NULL,
+    key         TEXT NOT NULL,           -- short label e.g. "preferred_language"
+    value       TEXT NOT NULL,           -- the remembered fact
+    updated_at  REAL NOT NULL,
+    UNIQUE(sender_id, channel, key) ON CONFLICT REPLACE
+);
+
 CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_conv_sender ON conversations(sender_id, last_active);
 CREATE INDEX IF NOT EXISTS idx_audit_sender ON audit_log(sender_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_summaries_conv ON summaries(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_user_memory_sender ON user_memory(sender_id, channel);
 """
 
 

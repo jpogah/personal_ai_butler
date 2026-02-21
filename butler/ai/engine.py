@@ -247,9 +247,12 @@ Always run these from the working directory: {butler_home}
 """
 
         try:
-            # Format conversation history as a readable transcript
+            # Format conversation history as a readable transcript.
+            # Limit to last 12 messages and cap each at 800 chars to keep
+            # the prompt fast — long transcripts cause multi-minute delays.
             transcript_lines = [self._system_prompt, cli_tools_section, "--- Conversation so far ---"]
-            for msg in history[:-1]:  # exclude the just-appended user message
+            recent_history = history[:-1][-12:]  # at most 12 prior turns
+            for msg in recent_history:
                 role = msg.get("role", "?")
                 content = msg.get("content", "")
                 if isinstance(content, list):
@@ -259,6 +262,8 @@ Always run these from the working directory: {butler_home}
                     content = " ".join(text_parts)
                 label = "User" if role == "user" else "Assistant"
                 if content:
+                    if len(content) > 800:
+                        content = content[:800] + "…[truncated]"
                     transcript_lines.append(f"{label}: {content}")
 
             transcript_lines.extend(["", "--- New message ---", f"User: {current_text}"])

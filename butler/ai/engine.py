@@ -248,10 +248,11 @@ Always run these from the working directory: {butler_home}
 
         try:
             # Format conversation history as a readable transcript.
-            # Limit to last 12 messages and cap each at 800 chars to keep
-            # the prompt fast — long transcripts cause multi-minute delays.
+            # Keep last 20 messages for project continuity, but cap each
+            # individual message at 2000 chars to avoid bloat from large
+            # code dumps or file reads that inflate the prompt.
             transcript_lines = [self._system_prompt, cli_tools_section, "--- Conversation so far ---"]
-            recent_history = history[:-1][-12:]  # at most 12 prior turns
+            recent_history = history[:-1][-20:]  # at most 20 prior turns
             for msg in recent_history:
                 role = msg.get("role", "?")
                 content = msg.get("content", "")
@@ -262,8 +263,8 @@ Always run these from the working directory: {butler_home}
                     content = " ".join(text_parts)
                 label = "User" if role == "user" else "Assistant"
                 if content:
-                    if len(content) > 800:
-                        content = content[:800] + "…[truncated]"
+                    if len(content) > 2000:
+                        content = content[:2000] + "…[truncated]"
                     transcript_lines.append(f"{label}: {content}")
 
             transcript_lines.extend(["", "--- New message ---", f"User: {current_text}"])
@@ -293,7 +294,7 @@ Always run these from the working directory: {butler_home}
 
             stdout, stderr = await asyncio.wait_for(
                 proc.communicate(input=full_prompt.encode()),
-                timeout=300,
+                timeout=600,  # 10 min — project tasks (code, file ops) can take a while
             )
 
             output = stdout.decode(errors="replace").strip()
@@ -310,7 +311,7 @@ Always run these from the working directory: {butler_home}
             return output
 
         except asyncio.TimeoutError:
-            return "⏰ Request timed out (5 min). Try narrowing your question — e.g. ask about a specific file or function rather than the whole codebase."
+            return "⏰ Request timed out (10 min). The task may be too large for one go — try breaking it into smaller steps."
         except FileNotFoundError:
             return (
                 f"❌ Claude CLI not found at {claude_bin}.\n"

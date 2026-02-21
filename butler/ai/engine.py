@@ -230,9 +230,12 @@ Screenshots:
   {tools_cli} screenshot '{{"target":"desktop"}}'  # or "browser"
 
 Email (if configured):
-  {tools_cli} email_list '{{"count":10}}'
+  {tools_cli} email_list '{{"count":10}}'                                     # default account
+  {tools_cli} email_list '{{"count":10,"account":"work"}}'                    # named account
   {tools_cli} email_read '{{"message_id":"42"}}'
+  {tools_cli} email_read '{{"message_id":"42","account":"personal"}}'
   {tools_cli} email_send '{{"to":"x@y.com","subject":"Hi","body":"Hello"}}'
+  {tools_cli} email_send '{{"to":"x@y.com","subject":"Hi","body":"Hello","account":"work"}}'
 
 Files:
   {tools_cli} file_read '{{"path":"~/notes.txt"}}'

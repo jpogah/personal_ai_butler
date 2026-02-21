@@ -150,15 +150,47 @@ class Config:
 
     @property
     def email_enabled(self) -> bool:
-        return bool(self.get("email", "enabled", default=False))
+        if not self.get("email", "enabled", default=False):
+            return False
+        # True if at least one account (new format) or old-style imap configured
+        if self.get("email", "accounts", default={}):
+            return True
+        return bool(self.get("email", "imap", default={}))
+
+    @property
+    def email_accounts(self) -> dict:
+        """Return dict of account_name → {imap: {...}, smtp: {...}}.
+
+        Supports both new multi-account format (email.accounts.*) and the
+        legacy flat format (email.imap / email.smtp → synthesised as 'default').
+        """
+        if not self.get("email", "enabled", default=False):
+            return {}
+        accounts = self.get("email", "accounts", default={})
+        if accounts:
+            return dict(accounts)
+        # Backward compat: old flat format
+        imap = self.get("email", "imap", default={})
+        smtp = self.get("email", "smtp", default={})
+        if imap:
+            return {"default": {"imap": imap, "smtp": smtp}}
+        return {}
 
     @property
     def email_imap(self) -> dict:
-        return self.get("email", "imap", default={})
+        """Legacy accessor — returns the first/only account's IMAP config."""
+        accounts = self.email_accounts
+        if accounts:
+            return next(iter(accounts.values())).get("imap", {})
+        return {}
 
     @property
     def email_smtp(self) -> dict:
-        return self.get("email", "smtp", default={})
+        """Legacy accessor — returns the first/only account's SMTP config."""
+        accounts = self.email_accounts
+        if accounts:
+            return next(iter(accounts.values())).get("smtp", {})
+        return {}
 
     @property
     def browser_enabled(self) -> bool:

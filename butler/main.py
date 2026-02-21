@@ -86,10 +86,15 @@ class Butler:
             history=self._history,
         )
 
-        # Email tool (optional)
-        email_tool = None
+        # Email tools (optional, supports multiple named accounts)
+        email_tools = {}
         if cfg.email_enabled:
-            email_tool = EmailTool(cfg.email_imap, cfg.email_smtp)
+            for acct_name, acct_cfg in cfg.email_accounts.items():
+                email_tools[acct_name] = EmailTool(
+                    acct_cfg.get("imap", {}),
+                    acct_cfg.get("smtp", {}),
+                )
+            logger.info("Email accounts configured: %s", list(email_tools.keys()))
 
         # Browser config
         browser_cfg = {}
@@ -107,7 +112,7 @@ class Butler:
             file_list_fn=file_list,
             file_send_fn=None,  # unused — file_send dispatched via send_file_to_user
             browser_cfg=browser_cfg,
-            email_tool=email_tool,
+            email_tools=email_tools,
             send_file_to_user=self._send_file_to_user,
             approver_factory=self._get_approver,
         )

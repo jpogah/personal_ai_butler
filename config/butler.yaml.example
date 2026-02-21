@@ -45,21 +45,37 @@ anthropic:
   history_keep_recent: 10
 
 # ─── Email ───────────────────────────────────────────────────────────────────
+# Multi-account: add as many named accounts as you like.
+# Ask the butler "check my work email" or "list emails from personal".
+# The first account listed is the default when no account name is specified.
 email:
   enabled: false
-  imap:
-    host: "imap.gmail.com"
-    port: 993
-    # Gmail: use your email address
-    username: "you@gmail.com"
-    # Gmail: generate an App Password at myaccount.google.com/apppasswords
-    password: "YOUR_APP_PASSWORD"
-  smtp:
-    host: "smtp.gmail.com"
-    port: 587
-    username: "you@gmail.com"
-    password: "YOUR_APP_PASSWORD"
-    from_address: "you@gmail.com"
+  accounts:
+    personal:
+      imap:
+        host: "imap.gmail.com"
+        port: 993
+        username: "you@gmail.com"
+        # Gmail: generate App Password at myaccount.google.com/apppasswords
+        password: "YOUR_APP_PASSWORD"
+      smtp:
+        host: "smtp.gmail.com"
+        port: 587
+        username: "you@gmail.com"
+        password: "YOUR_APP_PASSWORD"
+        from_address: "you@gmail.com"
+    work:
+      imap:
+        host: "imap.gmail.com"
+        port: 993
+        username: "you@work.com"
+        password: "YOUR_WORK_APP_PASSWORD"
+      smtp:
+        host: "smtp.gmail.com"
+        port: 587
+        username: "you@work.com"
+        password: "YOUR_WORK_APP_PASSWORD"
+        from_address: "you@work.com"
 
 # ─── Browser ─────────────────────────────────────────────────────────────────
 browser:

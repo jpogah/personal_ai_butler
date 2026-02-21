@@ -112,7 +112,24 @@ async def _run(tool_name: str, args: dict) -> str:
         if not cfg or not cfg.email_enabled:
             return "[ERROR] Email not configured. Enable it in config/butler.yaml."
         from butler.tools.email_tool import EmailTool
-        email = EmailTool(cfg.email_imap, cfg.email_smtp)
+
+        # Build email tool instances for all configured accounts
+        email_tools = {
+            name: EmailTool(acct.get("imap", {}), acct.get("smtp", {}))
+            for name, acct in cfg.email_accounts.items()
+        }
+        if not email_tools:
+            return "[ERROR] No email accounts configured."
+
+        # Select account by name, falling back to first available
+        account = args.get("account")
+        if account and account in email_tools:
+            email = email_tools[account]
+        else:
+            email = next(iter(email_tools.values()))
+            if account:
+                available = ", ".join(email_tools.keys())
+                return f"[ERROR] Unknown account '{account}'. Available: {available}"
 
         if tool_name == "email_list":
             return await email.list_emails(

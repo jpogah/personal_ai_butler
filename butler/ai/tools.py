@@ -149,6 +149,7 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "count": {"type": "integer", "description": "Number of emails to list (default 10)"},
                 "folder": {"type": "string", "description": "Mailbox folder (default INBOX)"},
+                "account": {"type": "string", "description": "Email account name (e.g. 'personal', 'work'). Omit to use default."},
             },
         },
     },
@@ -159,6 +160,7 @@ TOOL_DEFINITIONS = [
             "type": "object",
             "properties": {
                 "message_id": {"type": "string", "description": "Email message ID from email_list"},
+                "account": {"type": "string", "description": "Email account name. Omit to use default."},
             },
             "required": ["message_id"],
         },
@@ -172,6 +174,7 @@ TOOL_DEFINITIONS = [
                 "to": {"type": "string", "description": "Recipient email address"},
                 "subject": {"type": "string", "description": "Email subject"},
                 "body": {"type": "string", "description": "Email body (plain text)"},
+                "account": {"type": "string", "description": "Email account to send from (e.g. 'personal', 'work'). Omit to use default."},
             },
             "required": ["to", "subject", "body"],
         },
@@ -225,7 +228,7 @@ class ToolRegistry:
         self._file_write_fn = None
         self._file_list_fn = None
         self._browser_cfg: dict = {}
-        self._email_tool = None
+        self._email_tools: dict = {}   # account_name → EmailTool
         self._send_file_to_user: Optional[Callable] = None
         self._approver_factory: Optional[Callable] = None
         self._history = None   # ConversationHistory instance for memory tools
@@ -238,7 +241,7 @@ class ToolRegistry:
         file_list_fn,
         file_send_fn,          # accepted but unused (kept for API compat)
         browser_cfg: dict,
-        email_tool,
+        email_tools,           # dict[str, EmailTool] or single EmailTool (legacy)
         send_file_to_user: Callable,
         approver_factory: Callable,
     ):
@@ -247,9 +250,23 @@ class ToolRegistry:
         self._file_write_fn = file_write_fn
         self._file_list_fn = file_list_fn
         self._browser_cfg = browser_cfg
-        self._email_tool = email_tool
+        # Accept both dict (multi-account) and single EmailTool (legacy)
+        if isinstance(email_tools, dict):
+            self._email_tools = email_tools
+        elif email_tools is not None:
+            self._email_tools = {"default": email_tools}
+        else:
+            self._email_tools = {}
         self._send_file_to_user = send_file_to_user
         self._approver_factory = approver_factory
+
+    def _get_email_tool(self, account: Optional[str] = None):
+        """Return the EmailTool for the given account name, or the default."""
+        if not self._email_tools:
+            return None
+        if account and account in self._email_tools:
+            return self._email_tools[account]
+        return next(iter(self._email_tools.values()))
 
     def set_history(self, history) -> None:
         self._history = history
@@ -333,22 +350,25 @@ class ToolRegistry:
             return path
 
         elif tool_name == "email_list":
-            if not self._email_tool:
+            et = self._get_email_tool(args.get("account"))
+            if not et:
                 return "[ERROR] Email not configured"
-            return await self._email_tool.list_emails(
+            return await et.list_emails(
                 count=args.get("count", 10),
                 folder=args.get("folder", "INBOX"),
             )
 
         elif tool_name == "email_read":
-            if not self._email_tool:
+            et = self._get_email_tool(args.get("account"))
+            if not et:
                 return "[ERROR] Email not configured"
-            return await self._email_tool.read_email(args["message_id"])
+            return await et.read_email(args["message_id"])
 
         elif tool_name == "email_send":
-            if not self._email_tool:
+            et = self._get_email_tool(args.get("account"))
+            if not et:
                 return "[ERROR] Email not configured"
-            return await self._email_tool.send_email(
+            return await et.send_email(
                 args["to"], args["subject"], args["body"], approver
             )
 

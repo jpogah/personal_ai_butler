@@ -37,16 +37,21 @@ def _imap_list_emails(
 
             lines = []
             for num in recent:
-                _, msg_data = conn.fetch(num, "(ENVELOPE)")
-                raw = msg_data[0][1].decode(errors="replace")
-                # Simple field extraction
-                _, msg_data2 = conn.fetch(num, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])")
-                header_bytes = msg_data2[0][1]
+                _, msg_data = conn.fetch(num, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])")
+                # imaplib can return mixed tuples; find the bytes part
+                header_bytes = None
+                for part in msg_data:
+                    if isinstance(part, tuple):
+                        header_bytes = part[1]
+                        break
+                if not header_bytes or not isinstance(header_bytes, bytes):
+                    continue
                 msg = email.message_from_bytes(header_bytes)
                 subject = msg.get("Subject", "(no subject)")
                 from_ = msg.get("From", "?")
                 date = msg.get("Date", "?")
-                lines.append(f"[{num.decode()}] From: {from_}\n    Subject: {subject}\n    Date: {date}")
+                num_str = num.decode() if isinstance(num, bytes) else str(num)
+                lines.append(f"[{num_str}] From: {from_}\n    Subject: {subject}\n    Date: {date}")
 
             return "\n\n".join(lines) if lines else "(no messages)"
     except Exception as e:

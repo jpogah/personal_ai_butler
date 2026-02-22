@@ -43,6 +43,8 @@ anthropic:
   history_token_budget: 100000
   # Number of recent messages to always keep when truncating
   history_keep_recent: 10
+  # Max seconds to wait for Claude CLI to finish a task (default 3600 = 1 hour)
+  cli_timeout: 3600
 
 # ─── Email ───────────────────────────────────────────────────────────────────
 # Multi-account: add as many named accounts as you like.

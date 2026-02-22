@@ -84,6 +84,7 @@ class Butler:
             model=cfg.anthropic_model,
             max_tokens=cfg.anthropic_max_tokens,
             history=self._history,
+            cli_timeout=cfg.cli_timeout,
         )
 
         # Email tools (optional, supports multiple named accounts)

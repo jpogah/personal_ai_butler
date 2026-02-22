@@ -117,6 +117,10 @@ class Config:
         return int(self.get("anthropic", "history_keep_recent", default=10))
 
     @property
+    def cli_timeout(self) -> float:
+        return float(self.get("anthropic", "cli_timeout", default=3600))
+
+    @property
     def authorized_telegram_ids(self) -> list:
         return self.get("security", "authorized_senders", "telegram", default=[])
 

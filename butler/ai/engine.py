@@ -26,11 +26,13 @@ class AIEngine:
         model: str,
         max_tokens: int,
         history: ConversationHistory,
+        cli_timeout: float = 3600,  # 1 hour default
     ):
         self._api_key = api_key
         self._model = model
         self._max_tokens = max_tokens
         self._history = history
+        self._cli_timeout = cli_timeout
         self._system_prompt = build_system_prompt()
 
         if api_key:
@@ -294,7 +296,7 @@ Always run these from the working directory: {butler_home}
 
             stdout, stderr = await asyncio.wait_for(
                 proc.communicate(input=full_prompt.encode()),
-                timeout=600,  # 10 min — project tasks (code, file ops) can take a while
+                timeout=self._cli_timeout,
             )
 
             output = stdout.decode(errors="replace").strip()
@@ -311,7 +313,8 @@ Always run these from the working directory: {butler_home}
             return output
 
         except asyncio.TimeoutError:
-            return "⏰ Request timed out (10 min). The task may be too large for one go — try breaking it into smaller steps."
+            mins = int(self._cli_timeout // 60)
+            return f"⏰ Request timed out ({mins} min). The task may be too large — try breaking it into smaller steps."
         except FileNotFoundError:
             return (
                 f"❌ Claude CLI not found at {claude_bin}.\n"

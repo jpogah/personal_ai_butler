@@ -501,19 +501,22 @@ async def instagram_post(image_path: str, caption: str = "", **kw) -> str:
         await asyncio.sleep(3)
 
         # Navigate through crop (Next) → filters/edit (Next) → caption (Share)
-        # Step 1: Crop → Next
+        # Instagram uses div[role="button"] (not <button>) for these header actions.
+        # Step 1: Wait for Crop dialog, then click Next
         try:
-            await page.click("button:has-text('Next')", timeout=6000)
-            await asyncio.sleep(2)
+            await page.wait_for_selector("[role='dialog'] [role='heading']:has-text('Crop')", timeout=8000)
+            await page.click("[role='dialog'] div[role='button']:has-text('Next')", timeout=6000)
         except Exception as e:
             return f"[ERROR] Could not advance from crop step: {e}"
 
-        # Step 2: Filters/Edit → Next
+        # Step 2: Wait for Edit/Filters dialog, then click Next
         try:
-            await page.click("button:has-text('Next')", timeout=6000)
-            await asyncio.sleep(2)
+            await page.wait_for_selector("[role='dialog'] [role='heading']:has-text('Edit')", timeout=10000)
+            await page.click("[role='dialog'] div[role='button']:has-text('Next')", timeout=6000)
         except Exception as e:
             return f"[ERROR] Could not advance from filter step: {e}"
+
+        await asyncio.sleep(1)
 
         # Step 3: Caption screen — fill caption then Share
         if caption:
@@ -526,7 +529,7 @@ async def instagram_post(image_path: str, caption: str = "", **kw) -> str:
 
         # Click Share and wait for confirmation
         try:
-            await page.click("button:has-text('Share')", timeout=10000)
+            await page.click("[role='dialog'] div[role='button']:has-text('Share')", timeout=10000)
         except Exception as e:
             return f"[ERROR] Could not find Share button: {e}"
 

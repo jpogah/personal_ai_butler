@@ -7,6 +7,12 @@ import os
 from pathlib import Path
 from typing import Optional
 
+try:
+    from playwright_stealth import Stealth
+    _stealth = Stealth(navigator_platform_override="MacIntel")
+except ImportError:
+    _stealth = None
+
 logger = logging.getLogger(__name__)
 
 _browser_instance = None
@@ -38,9 +44,25 @@ async def _get_page(user_data_dir: str = "./data/browser_profile", headless: boo
     _browser_instance = await _playwright_instance.chromium.launch_persistent_context(
         user_data_dir=str(profile_dir),
         headless=headless,
-        args=["--no-sandbox", "--disable-dev-shm-usage"],
+        args=[
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-blink-features=AutomationControlled",
+            "--disable-crash-reporter",
+        ],
         viewport={"width": 1280, "height": 900},
+        user_agent=(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/131.0.0.0 Safari/537.36"
+        ),
     )
+
+    # Apply stealth patches to the context so every page inherits them
+    if _stealth is not None:
+        await _stealth.apply_stealth_async(_browser_instance)
+        logger.info("Stealth mode applied to browser context")
+
     _page_instance = _browser_instance.pages[0] if _browser_instance.pages else await _browser_instance.new_page()
     logger.info("Browser initialized (headless=%s)", headless)
     return _page_instance

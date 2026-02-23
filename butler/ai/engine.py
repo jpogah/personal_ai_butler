@@ -244,6 +244,18 @@ Files:
   {tools_cli} file_list '{{"directory":"~/Desktop"}}'
   {tools_cli} file_write '{{"path":"~/out.txt","content":"hello"}}'
 
+LinkedIn (requires prior manual login — see First Login instructions):
+  {tools_cli} linkedin_get_feed '{{}}'
+  {tools_cli} linkedin_get_notifications '{{}}'
+  {tools_cli} linkedin_get_messages '{{}}'
+  {tools_cli} linkedin_get_pages '{{}}'
+  {tools_cli} linkedin_connect '{{"profile_url":"https://linkedin.com/in/username"}}'
+  {tools_cli} linkedin_connect '{{"profile_url":"https://linkedin.com/in/username","message":"Hi!"}}'
+  {tools_cli} linkedin_comment '{{"post_url":"https://linkedin.com/feed/update/urn:li:...","text":"Great post!"}}'
+  {tools_cli} linkedin_send_message '{{"recipient":"Jane Doe","text":"Hello!"}}'
+  {tools_cli} linkedin_post '{{"text":"Excited to share..."}}'
+  {tools_cli} linkedin_page_post '{{"page_name":"my-company","text":"Company update..."}}'
+
 When a tool returns a file path (screenshot, browser_screenshot), use Read to display it.
 Always run these from the working directory: {butler_home}
 """

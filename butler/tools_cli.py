@@ -144,8 +144,85 @@ async def _run(tool_name: str, args: dict) -> str:
                 args["to"], args["subject"], args["body"], approver=None
             )
 
+    # ── LinkedIn login helper (one-time setup) ────────────────────────────
+    elif tool_name == "linkedin_login":
+        from butler.tools.browser_tool import _get_page
+        print("Opening LinkedIn login page — log in manually in the browser window.")
+        print("Waiting up to 5 minutes for login to complete...")
+        page = await _get_page(**browser_kwargs)
+        await page.goto("https://www.linkedin.com/login", wait_until="domcontentloaded", timeout=30000)
+
+        import asyncio as _asyncio
+        deadline = 300  # 5 minutes
+        interval = 5
+        elapsed = 0
+        while elapsed < deadline:
+            try:
+                await page.wait_for_selector(
+                    "nav.global-nav, [class*='global-nav__me'], "
+                    "[data-test-id='nav-settings__dropdown-trigger']",
+                    timeout=interval * 1000,
+                )
+                return "[OK] Logged in to LinkedIn. Session saved. Set browser.headless: true in config/butler.yaml."
+            except Exception:
+                elapsed += interval
+                remaining = deadline - elapsed
+                if remaining > 0:
+                    print(f"  Still waiting... ({remaining}s remaining)", flush=True)
+
+        return "[ERROR] Login timeout — browser closed without detecting a successful login."
+
+    # ── LinkedIn tools ────────────────────────────────────────────────────
+    elif tool_name.startswith("linkedin_"):
+        from butler.tools.linkedin_tool import (
+            linkedin_get_feed,
+            linkedin_get_notifications,
+            linkedin_get_messages,
+            linkedin_get_pages,
+            linkedin_connect,
+            linkedin_comment,
+            linkedin_send_message,
+            linkedin_post,
+            linkedin_page_post,
+        )
+
+        if tool_name == "linkedin_get_feed":
+            return await linkedin_get_feed(**browser_kwargs)
+        elif tool_name == "linkedin_get_notifications":
+            return await linkedin_get_notifications(**browser_kwargs)
+        elif tool_name == "linkedin_get_messages":
+            return await linkedin_get_messages(**browser_kwargs)
+        elif tool_name == "linkedin_get_pages":
+            return await linkedin_get_pages(**browser_kwargs)
+        elif tool_name == "linkedin_connect":
+            return await linkedin_connect(
+                args["profile_url"], args.get("message", ""),
+                approver=None, **browser_kwargs
+            )
+        elif tool_name == "linkedin_comment":
+            return await linkedin_comment(
+                args["post_url"], args["text"],
+                approver=None, **browser_kwargs
+            )
+        elif tool_name == "linkedin_send_message":
+            return await linkedin_send_message(
+                args["recipient"], args["text"],
+                approver=None, **browser_kwargs
+            )
+        elif tool_name == "linkedin_post":
+            return await linkedin_post(
+                args["text"], approver=None, **browser_kwargs
+            )
+        elif tool_name == "linkedin_page_post":
+            return await linkedin_page_post(
+                args["page_name"], args["text"],
+                approver=None, **browser_kwargs
+            )
+        else:
+            return f"[ERROR] Unknown LinkedIn tool: {tool_name}"
+
     else:
-        return f"[ERROR] Unknown tool: {tool_name}\nAvailable: browser_navigate, browser_click, browser_type, browser_get_text, browser_screenshot, screenshot, file_read, file_write, file_list, email_list, email_read, email_send"
+        return f"[ERROR] Unknown tool: {tool_name}\nAvailable: browser_navigate, browser_click, browser_type, browser_get_text, browser_screenshot, screenshot, file_read, file_write, file_list, email_list, email_read, email_send, linkedin_get_feed, linkedin_get_notifications, linkedin_get_messages, linkedin_get_pages, linkedin_connect, linkedin_comment, linkedin_send_message, linkedin_post, linkedin_page_post"
 
 
 def main():

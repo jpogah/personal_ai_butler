@@ -180,6 +180,85 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "linkedin_get_feed",
+        "description": "Fetch the 10 most recent posts from the LinkedIn home feed.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "linkedin_get_notifications",
+        "description": "Fetch recent LinkedIn notifications.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "linkedin_get_messages",
+        "description": "Fetch recent LinkedIn message threads (name + preview).",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "linkedin_get_pages",
+        "description": "List LinkedIn pages managed by the user.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "linkedin_connect",
+        "description": "Send a LinkedIn connection request to a profile. Requires user approval.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "profile_url": {"type": "string", "description": "Full LinkedIn profile URL"},
+                "message": {"type": "string", "description": "Optional personal note (max 300 chars)"},
+            },
+            "required": ["profile_url"],
+        },
+    },
+    {
+        "name": "linkedin_comment",
+        "description": "Post a comment on a LinkedIn post. Requires user approval.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "post_url": {"type": "string", "description": "Full URL of the LinkedIn post"},
+                "text": {"type": "string", "description": "Comment text"},
+            },
+            "required": ["post_url", "text"],
+        },
+    },
+    {
+        "name": "linkedin_send_message",
+        "description": "Send a LinkedIn direct message. Requires user approval. recipient = full name or profile URL.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "recipient": {"type": "string", "description": "Full name or LinkedIn profile URL"},
+                "text": {"type": "string", "description": "Message body"},
+            },
+            "required": ["recipient", "text"],
+        },
+    },
+    {
+        "name": "linkedin_post",
+        "description": "Publish a personal update/post on LinkedIn. Requires user approval.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "text": {"type": "string", "description": "Post text content"},
+            },
+            "required": ["text"],
+        },
+    },
+    {
+        "name": "linkedin_page_post",
+        "description": "Publish a post as a managed LinkedIn page. Requires user approval.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "page_name": {"type": "string", "description": "Page URL slug (e.g. 'my-company') or full admin URL"},
+                "text": {"type": "string", "description": "Post text content"},
+            },
+            "required": ["page_name", "text"],
+        },
+    },
+    {
         "name": "remember",
         "description": (
             "Save a fact about the user to persistent memory. Use this when the user asks you to "
@@ -370,6 +449,50 @@ class ToolRegistry:
                 return "[ERROR] Email not configured"
             return await et.send_email(
                 args["to"], args["subject"], args["body"], approver
+            )
+
+        elif tool_name == "linkedin_get_feed":
+            from ..tools.linkedin_tool import linkedin_get_feed
+            return await linkedin_get_feed(**bk)
+
+        elif tool_name == "linkedin_get_notifications":
+            from ..tools.linkedin_tool import linkedin_get_notifications
+            return await linkedin_get_notifications(**bk)
+
+        elif tool_name == "linkedin_get_messages":
+            from ..tools.linkedin_tool import linkedin_get_messages
+            return await linkedin_get_messages(**bk)
+
+        elif tool_name == "linkedin_get_pages":
+            from ..tools.linkedin_tool import linkedin_get_pages
+            return await linkedin_get_pages(**bk)
+
+        elif tool_name == "linkedin_connect":
+            from ..tools.linkedin_tool import linkedin_connect
+            return await linkedin_connect(
+                args["profile_url"], args.get("message", ""), approver=approver, **bk
+            )
+
+        elif tool_name == "linkedin_comment":
+            from ..tools.linkedin_tool import linkedin_comment
+            return await linkedin_comment(
+                args["post_url"], args["text"], approver=approver, **bk
+            )
+
+        elif tool_name == "linkedin_send_message":
+            from ..tools.linkedin_tool import linkedin_send_message
+            return await linkedin_send_message(
+                args["recipient"], args["text"], approver=approver, **bk
+            )
+
+        elif tool_name == "linkedin_post":
+            from ..tools.linkedin_tool import linkedin_post
+            return await linkedin_post(args["text"], approver=approver, **bk)
+
+        elif tool_name == "linkedin_page_post":
+            from ..tools.linkedin_tool import linkedin_page_post
+            return await linkedin_page_post(
+                args["page_name"], args["text"], approver=approver, **bk
             )
 
         elif tool_name == "remember":

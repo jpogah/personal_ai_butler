@@ -77,6 +77,16 @@ TOOL_BASE_RISKS: dict[str, RiskLevel] = {
     "email_list": RiskLevel.LOW,
     "email_read": RiskLevel.LOW,
     "email_send": RiskLevel.HIGH,
+    # LinkedIn
+    "linkedin_get_feed": RiskLevel.SAFE,
+    "linkedin_get_notifications": RiskLevel.SAFE,
+    "linkedin_get_messages": RiskLevel.SAFE,
+    "linkedin_get_pages": RiskLevel.SAFE,
+    "linkedin_connect": RiskLevel.MEDIUM,
+    "linkedin_comment": RiskLevel.MEDIUM,
+    "linkedin_send_message": RiskLevel.HIGH,
+    "linkedin_post": RiskLevel.HIGH,
+    "linkedin_page_post": RiskLevel.HIGH,
 }
 
 

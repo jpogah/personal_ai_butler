@@ -172,6 +172,45 @@ async def _run(tool_name: str, args: dict) -> str:
 
         return "[ERROR] Login timeout — browser closed without detecting a successful login."
 
+    # ── Instagram login helper (one-time setup) ───────────────────────────
+    elif tool_name == "instagram_login":
+        from butler.tools.browser_tool import _get_page
+        print("Opening Instagram login page — log in manually in the browser window.")
+        print("Waiting up to 5 minutes for login to complete...")
+        page = await _get_page(**browser_kwargs)
+        await page.goto(
+            "https://www.instagram.com/accounts/login/",
+            wait_until="domcontentloaded",
+            timeout=30000,
+        )
+
+        deadline = 300
+        interval = 5
+        elapsed = 0
+        while elapsed < deadline:
+            await asyncio.sleep(interval)
+            elapsed += interval
+            url = page.url
+            # Success: navigated away from the login page to any Instagram page
+            if "instagram.com" in url and "login" not in url and "signup" not in url:
+                # Double-check a nav element is present (confirms real session, not redirect loop)
+                try:
+                    await page.wait_for_selector(
+                        "a[href='/explore/'], a[href='/direct/inbox/'], svg[aria-label='Home']",
+                        timeout=3000,
+                    )
+                except Exception:
+                    pass  # URL check alone is enough
+                return (
+                    "[OK] Logged in to Instagram. Session saved. "
+                    "Set browser.headless: true in config/butler.yaml."
+                )
+            remaining = deadline - elapsed
+            if remaining > 0:
+                print(f"  Still waiting... ({remaining}s remaining)", flush=True)
+
+        return "[ERROR] Login timeout — browser closed without detecting a successful login."
+
     # ── LinkedIn tools ────────────────────────────────────────────────────
     elif tool_name.startswith("linkedin_"):
         from butler.tools.linkedin_tool import (
@@ -216,10 +255,54 @@ async def _run(tool_name: str, args: dict) -> str:
         elif tool_name == "linkedin_page_post":
             return await linkedin_page_post(
                 args["page_name"], args["text"],
+                image_path=args.get("image_path", ""),
                 approver=None, **browser_kwargs
             )
         else:
             return f"[ERROR] Unknown LinkedIn tool: {tool_name}"
+
+    # ── Instagram tools ───────────────────────────────────────────────────
+    elif tool_name.startswith("instagram_"):
+        from butler.tools.instagram_tool import (
+            instagram_get_feed,
+            instagram_get_notifications,
+            instagram_get_messages,
+            instagram_follow,
+            instagram_like,
+            instagram_comment,
+            instagram_send_message,
+            instagram_post,
+        )
+
+        if tool_name == "instagram_get_feed":
+            return await instagram_get_feed(**browser_kwargs)
+        elif tool_name == "instagram_get_notifications":
+            return await instagram_get_notifications(**browser_kwargs)
+        elif tool_name == "instagram_get_messages":
+            return await instagram_get_messages(**browser_kwargs)
+        elif tool_name == "instagram_follow":
+            return await instagram_follow(
+                args["profile_url"], approver=None, **browser_kwargs
+            )
+        elif tool_name == "instagram_like":
+            return await instagram_like(
+                args["post_url"], approver=None, **browser_kwargs
+            )
+        elif tool_name == "instagram_comment":
+            return await instagram_comment(
+                args["post_url"], args["text"], approver=None, **browser_kwargs
+            )
+        elif tool_name == "instagram_send_message":
+            return await instagram_send_message(
+                args["recipient"], args["text"], approver=None, **browser_kwargs
+            )
+        elif tool_name == "instagram_post":
+            return await instagram_post(
+                args["image_path"], args.get("caption", ""),
+                approver=None, **browser_kwargs
+            )
+        else:
+            return f"[ERROR] Unknown Instagram tool: {tool_name}"
 
     else:
         return f"[ERROR] Unknown tool: {tool_name}\nAvailable: browser_navigate, browser_click, browser_type, browser_get_text, browser_screenshot, screenshot, file_read, file_write, file_list, email_list, email_read, email_send, linkedin_get_feed, linkedin_get_notifications, linkedin_get_messages, linkedin_get_pages, linkedin_connect, linkedin_comment, linkedin_send_message, linkedin_post, linkedin_page_post"

@@ -87,6 +87,15 @@ TOOL_BASE_RISKS: dict[str, RiskLevel] = {
     "linkedin_send_message": RiskLevel.HIGH,
     "linkedin_post": RiskLevel.HIGH,
     "linkedin_page_post": RiskLevel.HIGH,
+    # Instagram
+    "instagram_get_feed":          RiskLevel.SAFE,
+    "instagram_get_notifications": RiskLevel.SAFE,
+    "instagram_get_messages":      RiskLevel.SAFE,
+    "instagram_follow":            RiskLevel.MEDIUM,
+    "instagram_like":              RiskLevel.LOW,
+    "instagram_comment":           RiskLevel.MEDIUM,
+    "instagram_send_message":      RiskLevel.HIGH,
+    "instagram_post":              RiskLevel.HIGH,
 }
 
 

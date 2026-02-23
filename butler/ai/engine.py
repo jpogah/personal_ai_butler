@@ -256,6 +256,16 @@ LinkedIn (requires prior manual login — see First Login instructions):
   {tools_cli} linkedin_post '{{"text":"Excited to share..."}}'
   {tools_cli} linkedin_page_post '{{"page_name":"my-company","text":"Company update..."}}'
 
+Instagram (requires prior manual login — see instagram_login):
+  {tools_cli} instagram_get_feed '{{}}'
+  {tools_cli} instagram_get_notifications '{{}}'
+  {tools_cli} instagram_get_messages '{{}}'
+  {tools_cli} instagram_like '{{"post_url":"https://www.instagram.com/p/ABC/"}}'
+  {tools_cli} instagram_follow '{{"profile_url":"https://www.instagram.com/username/"}}'
+  {tools_cli} instagram_comment '{{"post_url":"https://www.instagram.com/p/ABC/","text":"Great post!"}}'
+  {tools_cli} instagram_send_message '{{"recipient":"username","text":"Hello!"}}'
+  {tools_cli} instagram_post '{{"image_path":"/tmp/photo.jpg","caption":"Excited to share..."}}'
+
 When a tool returns a file path (screenshot, browser_screenshot), use Read to display it.
 Always run these from the working directory: {butler_home}
 """

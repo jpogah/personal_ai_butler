@@ -259,6 +259,79 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "instagram_get_feed",
+        "description": "Fetch the 10 most recent posts from the Instagram home feed.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "instagram_get_notifications",
+        "description": "Fetch recent Instagram activity/notifications.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "instagram_get_messages",
+        "description": "Fetch recent Instagram DM threads (username + message preview).",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "instagram_follow",
+        "description": "Follow an Instagram user. Requires user approval.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "profile_url": {"type": "string", "description": "Full Instagram profile URL"},
+            },
+            "required": ["profile_url"],
+        },
+    },
+    {
+        "name": "instagram_like",
+        "description": "Like an Instagram post. Auto-approved (low risk).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "post_url": {"type": "string", "description": "Full Instagram post URL"},
+            },
+            "required": ["post_url"],
+        },
+    },
+    {
+        "name": "instagram_comment",
+        "description": "Post a comment on an Instagram post. Requires user approval.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "post_url": {"type": "string", "description": "Full URL of the Instagram post"},
+                "text": {"type": "string", "description": "Comment text"},
+            },
+            "required": ["post_url", "text"],
+        },
+    },
+    {
+        "name": "instagram_send_message",
+        "description": "Send an Instagram DM. Always requires user approval. recipient = username or profile URL.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "recipient": {"type": "string", "description": "Instagram username or full profile URL"},
+                "text": {"type": "string", "description": "Message body"},
+            },
+            "required": ["recipient", "text"],
+        },
+    },
+    {
+        "name": "instagram_post",
+        "description": "Post a photo to Instagram. Always requires user approval.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Absolute path to the image file"},
+                "caption": {"type": "string", "description": "Optional caption text"},
+            },
+            "required": ["image_path"],
+        },
+    },
+    {
         "name": "remember",
         "description": (
             "Save a fact about the user to persistent memory. Use this when the user asks you to "
@@ -493,6 +566,44 @@ class ToolRegistry:
             from ..tools.linkedin_tool import linkedin_page_post
             return await linkedin_page_post(
                 args["page_name"], args["text"], approver=approver, **bk
+            )
+
+        elif tool_name == "instagram_get_feed":
+            from ..tools.instagram_tool import instagram_get_feed
+            return await instagram_get_feed(**bk)
+
+        elif tool_name == "instagram_get_notifications":
+            from ..tools.instagram_tool import instagram_get_notifications
+            return await instagram_get_notifications(**bk)
+
+        elif tool_name == "instagram_get_messages":
+            from ..tools.instagram_tool import instagram_get_messages
+            return await instagram_get_messages(**bk)
+
+        elif tool_name == "instagram_follow":
+            from ..tools.instagram_tool import instagram_follow
+            return await instagram_follow(args["profile_url"], approver=approver, **bk)
+
+        elif tool_name == "instagram_like":
+            from ..tools.instagram_tool import instagram_like
+            return await instagram_like(args["post_url"], approver=approver, **bk)
+
+        elif tool_name == "instagram_comment":
+            from ..tools.instagram_tool import instagram_comment
+            return await instagram_comment(
+                args["post_url"], args["text"], approver=approver, **bk
+            )
+
+        elif tool_name == "instagram_send_message":
+            from ..tools.instagram_tool import instagram_send_message
+            return await instagram_send_message(
+                args["recipient"], args["text"], approver=approver, **bk
+            )
+
+        elif tool_name == "instagram_post":
+            from ..tools.instagram_tool import instagram_post
+            return await instagram_post(
+                args["image_path"], args.get("caption", ""), approver=approver, **bk
             )
 
         elif tool_name == "remember":

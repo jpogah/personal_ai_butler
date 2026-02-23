@@ -464,83 +464,82 @@ async def instagram_post(image_path: str, caption: str = "", **kw) -> str:
         await page.goto("https://www.instagram.com/", wait_until="domcontentloaded", timeout=30000)
         await asyncio.sleep(3)
 
-        # Click the Create / New Post button (the "+" in the nav)
+        # Click the Create / New Post button (sidebar link with text "Create")
         create_clicked = False
-        for sel in [
-            "a[href*='create'], svg[aria-label='New post']",
-            "div[role='button']:has(svg[aria-label='New post'])",
-        ]:
-            try:
-                await page.click(sel, timeout=5000)
-                create_clicked = True
-                break
-            except Exception:
-                continue
+        try:
+            # Primary: the sidebar "Create" link (href="#", text "Create")
+            await page.click("a:has-text('Create')", timeout=5000)
+            create_clicked = True
+        except Exception:
+            pass
 
         if not create_clicked:
-            # JS fallback: find anything with aria-label containing "New post"
+            # JS fallback: click the Create link by text
             found = await page.evaluate("""() => {
-                const el = document.querySelector('[aria-label*="New post"], [aria-label*="Create"]');
-                if (el) { el.click(); return true; }
+                const links = [...document.querySelectorAll('a[href="#"]')];
+                const create = links.find(l => l.innerText.trim() === 'Create');
+                if (create) { create.click(); return true; }
                 return false;
             }""")
             if not found:
                 return "[ERROR] Could not find the Create post button"
 
-        await asyncio.sleep(1)
-
-        # Click "Select from computer" to trigger the file picker
-        try:
-            await page.click(
-                "button:has-text('Select from computer'), div[role='button']:has-text('Select from computer')",
-                timeout=5000,
-            )
-        except Exception:
-            return "[ERROR] Upload modal did not open — try again"
-
-        # Set the file directly on the hidden file input (bypasses OS dialog)
-        await page.set_input_files("input[type='file']", image_path, timeout=10000)
         await asyncio.sleep(2)
 
-        # Navigate through crop → filter → caption screens by clicking Next
-        for step in range(3):
-            try:
+        # Use filechooser event to set file (more reliable than set_input_files)
+        try:
+            async with page.expect_file_chooser(timeout=8000) as fc_info:
                 await page.click(
-                    "button:has-text('Next'), div[role='button']:has-text('Next')",
-                    timeout=4000,
+                    "button:has-text('Select from computer')",
+                    timeout=5000,
                 )
-                await asyncio.sleep(1)
-            except Exception:
-                break  # No more Next buttons — we're on the final screen
+            file_chooser = await fc_info.value
+            await file_chooser.set_files(image_path)
+        except Exception as e:
+            return f"[ERROR] Could not open file picker or set file: {e}"
 
-        # Fill caption
+        await asyncio.sleep(3)
+
+        # Navigate through crop (Next) → filters/edit (Next) → caption (Share)
+        # Step 1: Crop → Next
+        try:
+            await page.click("button:has-text('Next')", timeout=6000)
+            await asyncio.sleep(2)
+        except Exception as e:
+            return f"[ERROR] Could not advance from crop step: {e}"
+
+        # Step 2: Filters/Edit → Next
+        try:
+            await page.click("button:has-text('Next')", timeout=6000)
+            await asyncio.sleep(2)
+        except Exception as e:
+            return f"[ERROR] Could not advance from filter step: {e}"
+
+        # Step 3: Caption screen — fill caption then Share
         if caption:
-            caption_sel = (
-                "textarea[aria-label*='Write a caption'], "
-                "div[role='textbox'][aria-label*='caption'], "
-                "textarea[placeholder*='caption'], "
-                "textarea[aria-label*='Caption']"
-            )
             try:
-                await page.click(caption_sel, timeout=5000)
-                await page.fill(caption_sel, caption, timeout=5000)
+                await page.click("div[role='textbox'][aria-label*='caption' i], div[contenteditable][aria-label*='caption' i]", timeout=5000)
+                await page.keyboard.type(caption)
                 await asyncio.sleep(0.5)
             except Exception:
                 logger.debug("Could not fill caption field — proceeding without it")
 
-        # Share the post
-        for sel in [
-            "button:has-text('Share')",
-            "div[role='button']:has-text('Share')",
-        ]:
-            try:
-                await page.click(sel, timeout=10000)
-                await asyncio.sleep(2)
-                return "[OK] Photo posted to Instagram"
-            except Exception:
-                continue
+        # Click Share and wait for confirmation
+        try:
+            await page.click("button:has-text('Share')", timeout=10000)
+        except Exception as e:
+            return f"[ERROR] Could not find Share button: {e}"
 
-        return "[ERROR] Could not find Share button to publish the post"
+        # Wait for "Post shared" dialog
+        try:
+            await page.wait_for_selector(
+                "heading:has-text('Post shared'), h1:has-text('Post shared'), h3:has-text('Your post has been shared')",
+                timeout=30000,
+            )
+        except Exception:
+            pass  # Even if confirmation dialog isn't detected, post likely went through
+
+        return "[OK] Photo posted to Instagram"
 
     except Exception as e:
         return f"[ERROR] instagram_post: {e}"

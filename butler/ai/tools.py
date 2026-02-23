@@ -366,6 +366,44 @@ TOOL_DEFINITIONS = [
             "properties": {},
         },
     },
+    {
+        "name": "generate_image",
+        "description": (
+            "Generate an image from a text prompt using Stability AI. "
+            "Returns the saved image file path (which is then automatically sent to the user). "
+            "Use this to create photos, illustrations, artwork, or any visual content. "
+            "Generated images can also be passed to instagram_post or file_send."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "prompt": {
+                    "type": "string",
+                    "description": "Detailed text description of the image to generate",
+                },
+                "aspect_ratio": {
+                    "type": "string",
+                    "description": (
+                        "Image dimensions: '1:1' (square, default), '16:9' (widescreen), "
+                        "'9:16' (portrait/Stories), '4:3', '3:4'"
+                    ),
+                    "enum": ["1:1", "16:9", "9:16", "4:3", "3:4", "21:9", "9:21"],
+                },
+                "style_preset": {
+                    "type": "string",
+                    "description": (
+                        "Optional art style: photographic, digital-art, anime, cinematic, "
+                        "comic-book, fantasy-art, line-art, neon-punk, pixel-art, 3d-model"
+                    ),
+                },
+                "negative_prompt": {
+                    "type": "string",
+                    "description": "Things to exclude from the image (optional)",
+                },
+            },
+            "required": ["prompt"],
+        },
+    },
 ]
 
 
@@ -384,6 +422,10 @@ class ToolRegistry:
         self._send_file_to_user: Optional[Callable] = None
         self._approver_factory: Optional[Callable] = None
         self._history = None   # ConversationHistory instance for memory tools
+        self._stability_api_key: str = ""
+
+    def set_stability_key(self, api_key: str) -> None:
+        self._stability_api_key = api_key
 
     def configure(
         self,
@@ -625,6 +667,20 @@ class ToolRegistry:
             if not memories:
                 return "No memories stored yet."
             return "\n".join(f"• {k}: {v}" for k, v in memories.items())
+
+        elif tool_name == "generate_image":
+            from ..tools.image_tool import generate_image
+            path = await generate_image(
+                args["prompt"],
+                aspect_ratio=args.get("aspect_ratio", "1:1"),
+                style_preset=args.get("style_preset", ""),
+                negative_prompt=args.get("negative_prompt", ""),
+                api_key=self._stability_api_key,
+            )
+            if not path.startswith("[ERROR]"):
+                await self._send_file_to_user(recipient_id, path, channel)
+                return f"[OK] Image generated and sent"
+            return path
 
         else:
             return f"[ERROR] Unknown tool: {tool_name}"

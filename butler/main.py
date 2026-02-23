@@ -118,6 +118,7 @@ class Butler:
             approver_factory=self._get_approver,
         )
         registry.set_history(self._history)
+        registry.set_stability_key(cfg.get("stability", "api_key", default=""))
 
         # Channels
         if cfg.telegram_enabled and cfg.telegram_token:

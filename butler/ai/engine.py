@@ -266,7 +266,12 @@ Instagram (requires prior manual login — see instagram_login):
   {tools_cli} instagram_send_message '{{"recipient":"username","text":"Hello!"}}'
   {tools_cli} instagram_post '{{"image_path":"/tmp/photo.jpg","caption":"Excited to share..."}}'
 
-When a tool returns a file path (screenshot, browser_screenshot), use Read to display it.
+Image generation (requires stability.api_key in config):
+  {tools_cli} generate_image '{{"prompt":"a sunset over mountains, photorealistic"}}'
+  {tools_cli} generate_image '{{"prompt":"tech startup logo","aspect_ratio":"1:1","style_preset":"digital-art"}}'
+  {tools_cli} generate_image '{{"prompt":"portrait of a professional","aspect_ratio":"9:16","style_preset":"photographic","negative_prompt":"blurry, low quality"}}'
+
+When a tool returns a file path (screenshot, browser_screenshot, generate_image), use Read to display it.
 Always run these from the working directory: {butler_home}
 """
 

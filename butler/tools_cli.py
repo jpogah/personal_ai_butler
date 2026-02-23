@@ -304,8 +304,23 @@ async def _run(tool_name: str, args: dict) -> str:
         else:
             return f"[ERROR] Unknown Instagram tool: {tool_name}"
 
+    # ── Image generation ──────────────────────────────────────────────────────
+    elif tool_name == "generate_image":
+        from butler.tools.image_tool import generate_image
+        api_key = cfg.get("stability", "api_key", default="") if cfg else ""
+        if not api_key:
+            return "[ERROR] stability.api_key not set in config/butler.yaml"
+        return await generate_image(
+            args["prompt"],
+            aspect_ratio=args.get("aspect_ratio", "1:1"),
+            style_preset=args.get("style_preset", ""),
+            negative_prompt=args.get("negative_prompt", ""),
+            output_path=args.get("output_path", ""),
+            api_key=api_key,
+        )
+
     else:
-        return f"[ERROR] Unknown tool: {tool_name}\nAvailable: browser_navigate, browser_click, browser_type, browser_get_text, browser_screenshot, screenshot, file_read, file_write, file_list, email_list, email_read, email_send, linkedin_get_feed, linkedin_get_notifications, linkedin_get_messages, linkedin_get_pages, linkedin_connect, linkedin_comment, linkedin_send_message, linkedin_post, linkedin_page_post"
+        return f"[ERROR] Unknown tool: {tool_name}\nAvailable: browser_navigate, browser_click, browser_type, browser_get_text, browser_screenshot, screenshot, file_read, file_write, file_list, email_list, email_read, email_send, linkedin_get_feed, linkedin_get_notifications, linkedin_get_messages, linkedin_get_pages, linkedin_connect, linkedin_comment, linkedin_send_message, linkedin_post, linkedin_page_post, generate_image"
 
 
 def main():
